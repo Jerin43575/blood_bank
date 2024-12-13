@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Stock Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        table {
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .no-data {
+            font-size: 16px;
+            color: #888;
+            margin-top: 20px;
+        }
+
+        .loading {
+            font-size: 16px;
+            color: #4CAF50;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Blood Stock Management</h1>
+    <p class="loading" id="loading-message" style="display: none;">Loading data, please wait...</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Blood Type</th>
+                <th>Units Available</th>
+                <th>Hospital Name</th>
+            </tr>
+        </thead>
+        <tbody id="blood-stock-table">
+            <!-- Dynamic rows will be added here -->
+        </tbody>
+    </table>
+    <p class="no-data" id="no-data-message" style="display: none;">No blood stock data available.</p>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbsNTGNXARhhM4lDOiXFJn2YYO87jolak",
+            authDomain: "blood-bank-25d02.firebaseapp.com",
+            projectId: "blood-bank-25d02",
+            storageBucket: "blood-bank-25d02.appspot.com",
+            messagingSenderId: "712477215126",
+            appId: "1:712477215126:web:98bf1195072c2fb67bb5b7",
+            measurementId: "G-YFQC09RXMF"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fetch blood stock data
+        async function fetchBloodStock(hospitalId) {
+            const tableBody = document.getElementById("blood-stock-table");
+            const noDataMessage = document.getElementById("no-data-message");
+            const loadingMessage = document.getElementById("loading-message");
+            
+            tableBody.innerHTML = ""; // Clear the table
+            noDataMessage.style.display = "none"; // Hide no data message
+            loadingMessage.style.display = "block"; // Show loading message
+
+            try {
+                // Fetch hospital data
+                const hospitalDocRef = doc(db, "hospitals", hospitalId);
+                const hospitalDocSnap = await getDoc(hospitalDocRef);
+                let hospitalName = "Unknown";
+
+                if (hospitalDocSnap.exists()) {
+                    hospitalName = hospitalDocSnap.data().name || "Unknown Hospital";
+                } else {
+                    noDataMessage.style.display = "block";
+                    noDataMessage.textContent = "Hospital not found.";
+                    loadingMessage.style.display = "none";
+                    return;
+                }
+
+                // Fetch blood stock data
+                const bloodStockCollection = collection(db, "blood_stock", hospitalId, "blood_types");
+                const querySnapshot = await getDocs(bloodStockCollection);
+
+                if (querySnapshot.empty) {
+                    noDataMessage.style.display = "block"; // Show no data message
+                    loadingMessage.style.display = "none"; // Hide loading message
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const bloodType = data.bloodType || "N/A";
+                    const unitsAvailable = data.unitsAvailable || "N/A";
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+			<td>${hospitalName}</td>
+                        <td>${bloodType}</td>
+                        <td>${unitsAvailable}</td>
+                        
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+               async function loadBloodStock() {
+            if (!hospitalId) return;
+            
+            const tableBody = document.getElementById("blood-stock-table");
+            tableBody.innerHTML = "";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "blood_stock", hospitalId, "blood_types"));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${data.bloodType}</td><td>${data.unitsAvailable}</td>`;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error loading blood stock data:", error);
+            }
+
+    </script>
+</body>
+</html>

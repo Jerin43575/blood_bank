@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Declaration</title>
+    <link rel="stylesheet" href="styls.css">
+    <script src="script.js" defer></script>
+    <!-- Include Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Declaration</h1>
+        <form id="declarationForm">
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="confirmation" required>
+                    I understand that:
+                </label>
+                <br><br>
+                (a) Blood donation is a totally voluntary act and no inducement or remuneration has been offered
+                <br>
+                (b) Donation of blood/components is a medical procedure and that by donating voluntarily, I accept
+                the risk associated with this procedure.
+                <br>
+                (c) My donated blood, blood, and plasma recovered from my donated blood may be sent for plasma
+                fractionation for preparation of plasma-derived medicinal products, all of which may be used for
+                a larger patient population and not just this blood bank.
+                <br>
+                (d) I would like to be informed about any abnormal test results done on my donated blood: 
+                <label><input type="radio" name="abnormalResults" value="Yes"> Yes</label>
+                <label><input type="radio" name="abnormalResults" value="No" checked> No</label>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script type="module">
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbsNTGNXARhhM4lDOiXFJn2YYO87jolak",
+            authDomain: "blood-bank-25d02.firebaseapp.com",
+            projectId: "blood-bank-25d02",
+            storageBucket: "blood-bank-25d02.appspot.com",
+            messagingSenderId: "712477215126",
+            appId: "1:712477215126:web:98bf1195072c2fb67bb5b7",
+            measurementId: "G-YFQC09RXMF"
+        };
+
+        // Initialize Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Form submission handler
+        document.getElementById("declarationForm").addEventListener("submit", async function(event) {
+            event.preventDefault();  // Prevent default form submission
+
+            // Check if the checkbox is checked
+            const isConfirmed = document.getElementById("confirmation").checked;
+
+            if (isConfirmed) {
+                // Collect data from localStorage or previous pages
+                const healthAssessmentData = JSON.parse(localStorage.getItem("healthAssessmentData"));
+                const medicalAssessmentData = JSON.parse(localStorage.getItem("medicalAssessmentData"));
+                const abnormalResults = document.querySelector('input[name="abnormalResults"]:checked')?.value || "No";
+
+                // Declaration data
+                const declarationData = {
+                    confirmation: true, // confirmation data from declaration
+                    informedAboutAbnormalResults: abnormalResults
+                };
+
+                // Combine data from all pages
+                const fullData = {
+                    healthAssessment: healthAssessmentData,
+                    medicalAssessment: medicalAssessmentData,
+                    declaration: declarationData,
+                    createdAt: new Date().toISOString(),
+                };
+
+                // Get current user info
+                const user = auth.currentUser;
+
+                if (user) {
+                    try {
+                        // Save all the data to Firestore
+                        await addDoc(collection(db, "appointments"), {
+                            ...fullData,
+                            userId: user.uid,
+                        });
+
+                        // Show "Thank You" alert
+                        alert("Thank You");
+
+                        // Redirect to the blood donation page
+                        window.location.href = "blood_donation.html";  // Redirect to the blood_donation page
+                    } catch (error) {
+                        console.error("Error submitting data: ", error);
+                        alert("There was an error sending your appointment. Please try again.");
+                    }
+                } else {
+                    alert("Please log in to submit the appointment.");
+                }
+            } else {
+                alert("Please confirm the declaration before proceeding.");
+            }
+        });
+    </script>
+</body>
+</html>
